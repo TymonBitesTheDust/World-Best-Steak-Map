@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1c1a17">
+<title>World's 101 Best Steaks — Map</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1c1a17;          /* charcoal griddle */
+    --panel:#26231f;
+    --panel-2:#2f2b26;
+    --cream:#f6efdf;        /* brioche */
+    --gold:#f2b23e;         /* top-10 gold */
+    --tomato:#d94f30;       /* 11–50 */
+    --smoke:#8c8578;
+    --line:#3a352e;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:'Inter',system-ui,sans-serif;background:var(--ink);color:var(--cream);overflow:hidden}
+
+  /* ---------- Header ---------- */
+  header{
+    position:fixed;top:0;left:0;right:0;z-index:1200;
+    display:flex;align-items:center;gap:10px;
+    padding:10px 14px;
+    background:linear-gradient(180deg,rgba(28,26,23,.97),rgba(28,26,23,.9));
+    border-bottom:1px solid var(--line);
+  }
+  .logo{display:flex;flex-direction:column;line-height:1;min-width:max-content}
+  .logo .t1{font-family:'Anton',Impact,sans-serif;font-size:19px;letter-spacing:.5px;color:var(--gold)}
+  .logo .t2{font-size:9px;letter-spacing:2.5px;color:var(--smoke);text-transform:uppercase;margin-top:3px}
+  .searchbox{flex:1;display:flex;align-items:center;background:var(--panel-2);border:1px solid var(--line);border-radius:999px;padding:0 12px;max-width:420px}
+  .searchbox input{flex:1;background:none;border:none;outline:none;color:var(--cream);font:500 14px 'Inter',sans-serif;padding:9px 6px}
+  .searchbox input::placeholder{color:var(--smoke)}
+  .searchbox svg{flex:none;opacity:.6}
+
+  /* ---------- Filter chips ---------- */
+  .chips{
+    position:fixed;top:58px;left:0;right:0;z-index:1150;
+    display:flex;gap:8px;padding:8px 14px;overflow-x:auto;scrollbar-width:none;
+    -webkit-overflow-scrolling:touch;
+  }
+  .chips::-webkit-scrollbar{display:none}
+  .chip{
+    flex:none;padding:7px 14px;border-radius:999px;font:600 12px 'Inter',sans-serif;
+    background:var(--panel);border:1px solid var(--line);color:var(--cream);cursor:pointer;
+    transition:background .15s,color .15s;
+  }
+  .chip.on{background:var(--gold);border-color:var(--gold);color:var(--ink)}
+
+  /* ---------- Map ---------- */
+  #map{position:fixed;inset:0;z-index:1;background:#d8e0e0}
+  .leaflet-container{font-family:'Inter',sans-serif}
+  .leaflet-control-zoom{border:none!important;margin-bottom:24px!important;margin-left:14px!important}
+  .leaflet-control-zoom a{background:var(--panel)!important;color:var(--cream)!important;border:1px solid var(--line)!important}
+
+  /* rank badge markers */
+  .badge{
+    display:flex;align-items:center;justify-content:center;
+    width:34px;height:34px;border-radius:50% 50% 50% 4px;
+    font:700 12px 'Inter',sans-serif;color:var(--ink);
+    border:2px solid var(--ink);
+    box-shadow:0 2px 6px rgba(0,0,0,.5);
+    transform:rotate(-8deg);
+  }
+  .badge.gold{background:var(--gold)}
+  .badge.tomato{background:var(--tomato);color:var(--cream)}
+  .badge.char{background:var(--cream);color:var(--ink)}
+
+  .cluster{
+    display:flex;align-items:center;justify-content:center;
+    width:40px;height:40px;border-radius:50%;
+    background:var(--tomato);color:var(--cream);
+    font:700 13px 'Inter',sans-serif;border:2px solid var(--ink);
+    box-shadow:0 2px 8px rgba(0,0,0,.5);
+  }
+
+  /* popup */
+  .leaflet-popup-content-wrapper{background:var(--panel);color:var(--cream);border-radius:12px;border:1px solid var(--line)}
+  .leaflet-popup-tip{background:var(--panel)}
+  .leaflet-popup-content{margin:14px 16px;min-width:190px}
+  .pp-rank{font-family:'Anton',Impact,sans-serif;font-size:13px;color:var(--gold);letter-spacing:1px}
+  .pp-name{font-family:'Anton',Impact,sans-serif;font-size:19px;letter-spacing:.5px;margin:2px 0 1px}
+  .pp-city{font-size:12px;color:var(--smoke);margin-bottom:10px}
+  .pp-actions{display:flex;gap:8px}
+  .pp-actions a{
+    flex:1;text-align:center;text-decoration:none;padding:8px 6px;border-radius:8px;
+    font:600 12px 'Inter',sans-serif;
+  }
+  .pp-dir{background:var(--gold);color:var(--ink)}
+  .pp-ig{background:var(--panel-2);color:var(--cream);border:1px solid var(--line)}
+  .pp-note{font-size:10px;color:var(--smoke);margin-top:8px}
+
+  /* ---------- Floating buttons ---------- */
+  .fab{
+    position:fixed;z-index:1100;display:flex;align-items:center;gap:8px;
+    background:var(--gold);color:var(--ink);border:none;border-radius:999px;
+    font:700 13px 'Inter',sans-serif;padding:12px 18px;cursor:pointer;
+    box-shadow:0 4px 14px rgba(0,0,0,.5);
+  }
+  #listBtn{bottom:22px;left:50%;transform:translateX(-50%)}
+  #locBtn{bottom:22px;right:16px;width:46px;height:46px;padding:0;justify-content:center;background:var(--panel);color:var(--cream);border:1px solid var(--line)}
+
+  /* ---------- List panel ---------- */
+  #panel{
+    position:fixed;z-index:1300;left:0;right:0;bottom:0;top:auto;height:72%;
+    background:var(--panel);border-top-left-radius:18px;border-top-right-radius:18px;
+    border:1px solid var(--line);display:flex;flex-direction:column;
+    transform:translateY(105%);transition:transform .28s ease;
+  }
+  #panel.open{transform:translateY(0)}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 8px}
+  .panel-head h2{font-family:'Anton',Impact,sans-serif;font-size:16px;letter-spacing:1px}
+  .panel-head .cnt{font-size:12px;color:var(--smoke)}
+  .closex{background:none;border:none;color:var(--smoke);font-size:22px;cursor:pointer;line-height:1}
+  #list{flex:1;overflow-y:auto;padding:0 10px 20px}
+  .row{
+    display:flex;align-items:center;gap:12px;padding:11px 8px;
+    border-bottom:1px solid var(--line);cursor:pointer;border-radius:8px;
+  }
+  .row:hover{background:var(--panel-2)}
+  .row .rk{
+    flex:none;width:38px;height:38px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font:700 13px 'Inter',sans-serif;color:var(--ink);
+  }
+  .rk.gold{background:var(--gold)} .rk.tomato{background:var(--tomato);color:var(--cream)} .rk.char{background:var(--cream)}
+  .row .nm{font:600 14px 'Inter',sans-serif}
+  .row .ct{font-size:12px;color:var(--smoke);margin-top:2px}
+  .empty{padding:30px;text-align:center;color:var(--smoke);font-size:13px}
+
+  /* ---------- Desktop layout ---------- */
+  @media(min-width:900px){
+    #panel{
+      top:0;bottom:0;left:0;right:auto;width:360px;height:100%;
+      border-radius:0;border-right:1px solid var(--line);
+      transform:none;padding-top:74px;z-index:1100;
+    }
+    #panel .closex{display:none}
+    #listBtn{display:none}
+    #map{left:360px}
+    .chips{left:360px;right:0;top:66px}
+    header{padding-left:20px}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span class="t1">STEAK 101</span>
+    <span class="t2">World's Best Steak Restaurants · 2026</span>
+  </div>
+  <div class="searchbox">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f6efdf" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+    <input id="q" type="search" placeholder="Search restaurant or city…" autocomplete="off">
+  </div>
+</header>
+
+<div class="chips" id="chips">
+  <button class="chip on" data-f="all">All 101</button>
+  <button class="chip" data-f="top10">Top 10</button>
+  <button class="chip" data-f="top25">Top 25</button>
+  <button class="chip" data-f="Europe">Europe</button>
+  <button class="chip" data-f="Americas">Americas</button>
+  <button class="chip" data-f="Asia">Asia &amp; Middle East</button>
+  <button class="chip" data-f="Oceania">Australia</button>
+  <button class="chip" data-f="Africa">Africa</button>
+</div>
+
+<div id="map"></div>
+
+<button class="fab" id="listBtn">☰ &nbsp;Ranking list</button>
+<button class="fab" id="locBtn" title="Find me">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/></svg>
+</button>
+
+<div id="panel">
+  <div class="panel-head">
+    <h2>THE RANKING</h2>
+    <span class="cnt" id="cnt"></span>
+    <button class="closex" id="closePanel">×</button>
+  </div>
+  <div id="list"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
+<script>
+// rank, name, city, region, lat, lng, page slug on worldbeststeaks.com
+const R=[
+[1,"La Cúpula de El Capricho","Jiménez de Jamuz, Spain","Europe",42.3211,-5.8940,"la-c%C3%BApula"],
+[2,"Margaret","Double Bay, Sydney","Oceania",-33.8775,151.2416,"margaret"],
+[3,"Laia Erretegia","Hondarribia, Spain","Europe",43.3520,-1.8080,"laia"],
+[4,"I Due Cippi","Saturnia, Italy","Europe",42.6642,11.5030,"i-due-cippi"],
+[5,"Lana","Madrid","Europe",40.4300,-3.6870,"lana"],
+[6,"Casa Julián de Tolosa","Tolosa, Spain","Europe",43.1350,-2.0780,"casa-julian"],
+[7,"Ibai","London","Europe",51.5200,-0.1050,"ibai"],
+[8,"AG","Stockholm","Europe",59.3360,18.0350,"ag"],
+[9,"Burnt Ends","Singapore","Asia",1.3047,103.8090,"burnt-ends"],
+[10,"Bodega El Capricho","Jiménez de Jamuz, Spain","Europe",42.3225,-5.8965,"el-capricho"],
+[11,"Firedoor","Surry Hills, Sydney","Oceania",-33.8800,151.2110,"firedoor"],
+[12,"The Eighty Six","New York","Americas",40.7270,-73.9840,"the-eighty-six"],
+[13,"Hawksmoor St Pancras","London","Europe",51.5300,-0.1258,"hawksmoor"],
+[14,"Aalia","Sydney","Oceania",-33.8680,151.2070,"aalia"],
+[15,"Asador Bastian","Chicago","Americas",41.8920,-87.6300,"asador-bastian"],
+[16,"Arkhé Bar & Dining","Adelaide","Oceania",-34.9210,138.6300,"arkh%C3%A9"],
+[17,"Brat","Shoreditch, London","Europe",51.5240,-0.0770,"brat"],
+[18,"Fireside","Hong Kong","Asia",22.2830,114.1700,"fireside"],
+[19,"Gillis","Ghent, Belgium","Europe",51.0543,3.7174,"gillis"],
+[20,"Agnes","Brisbane","Oceania",-27.4570,153.0350,"agnes"],
+[21,"Cote","New York","Americas",40.7405,-73.9900,"cote"],
+[22,"Fogón Asado","Buenos Aires","Americas",-34.5890,-58.4300,"fog%C3%B3n"],
+[23,"Carcasse","Koksijde, Belgium","Europe",51.1070,2.6350,"carcasse"],
+[24,"Tributo","Quito","Americas",-0.1807,-78.4678,"tributo"],
+[25,"Miller & Lux","San Francisco","Americas",37.7680,-122.3870,"miller-%26-lux"],
+[26,"Born & Bred","Seoul","Asia",37.5660,127.0420,"born-%26-bred"],
+[27,"Gran Torino","Sydney","Oceania",-33.8730,151.2070,"gran-torino"],
+[28,"Hanu","Dubai","Asia",25.2050,55.2700,"hanu"],
+[29,"Steer Dining Room","South Yarra, Melbourne","Oceania",-37.8390,144.9930,"steer-dining-room"],
+[30,"Nikuya Tanaka","Singapore","Asia",1.2930,103.8360,"nikuya-tanaka"],
+[31,"Victor Churchill","Armadale, Melbourne","Oceania",-37.8560,145.0190,"victor-churchill"],
+[32,"Elisa","Vancouver","Americas",49.2740,-123.1220,"elisa"],
+[33,"The Grill at the International","Sydney","Oceania",-33.8650,151.2030,"the-grill-at-the-international"],
+[34,"La Tête d'Or","New York","Americas",40.7420,-73.9860,"la-t%C3%AAte-d%E2%80%99or"],
+[35,"Lutyens Grill","London","Europe",51.5134,-0.0910,"lutyens-grill"],
+[36,"Porteño","Surry Hills, Sydney","Oceania",-33.8860,151.2100,"porte%C3%B1o"],
+[37,"Asador Nicolás","Tolosa, Spain","Europe",43.1340,-2.0760,"asador-nicol%C3%A1s"],
+[38,"Rockpool Bar & Grill","Sydney","Oceania",-33.8650,151.2080,"rockpool"],
+[39,"La Braseria","Osio Sotto, Italy","Europe",45.6220,9.5900,"la-braseria"],
+[40,"Daniel's","Miami","Americas",25.7650,-80.1940,"daniel%E2%80%99s-miami"],
+[41,"Gwen","Hollywood, Los Angeles","Americas",34.0980,-118.3290,"gwen"],
+[42,"Blok","Pontyclun, Wales","Europe",51.5220,-3.3910,"blok"],
+[43,"Capa","Copenhagen","Europe",55.6760,12.5680,"capa"],
+[44,"Amaren","Bilbao","Europe",43.2630,-2.9350,"amaren"],
+[45,"The Devonshire","Soho, London","Europe",51.5110,-0.1390,"the-devonshire"],
+[46,"Char Fuego y Brasas","Tenerife","Europe",28.2916,-16.6291,"char"],
+[47,"Madre Rojas","Buenos Aires","Americas",-34.5830,-58.4370,"madre-rojas"],
+[48,"The Gidley","Sydney","Oceania",-33.8660,151.2075,"the-gidley"],
+[49,"Niku Steakhouse","San Francisco","Americas",37.7690,-122.4020,"niku"],
+[50,"Beefbar","Monaco","Europe",43.7350,7.4210,"beefbar"],
+[51,"Jacobs & Co Steakhouse","Toronto","Americas",43.6450,-79.3980,"jacobs-%26-co"],
+[52,"Vuur","Stellenbosch, South Africa","Africa",-33.9320,18.8600,"vuur"],
+[53,"Clover Grill","Paris","Europe",48.8560,2.3440,"clover"],
+[54,"Elena","Buenos Aires","Americas",-34.5910,-58.3830,"elena"],
+[55,"Chelsea Grill","Chelsea, London","Europe",51.4850,-0.1700,"chelsea-grill"],
+[56,"Anahi","Paris","Europe",48.8630,2.3610,"anahi"],
+[57,"Los 33","Madrid","Europe",40.4270,-3.6880,"los-33"],
+[58,"Jeffrey's","Austin","Americas",30.2790,-97.7590,"jeffrey%E2%80%99s"],
+[59,"20 Chapel","Marrickville, Sydney","Oceania",-33.9110,151.1550,"20-chapel"],
+[60,"11Woodfire","Dubai","Asia",25.1930,55.2500,"11woodfire"],
+[61,"Magma by Dany Karam","Sydney","Oceania",-33.8700,151.2100,"magma"],
+[62,"Gimlet","Melbourne","Oceania",-37.8167,144.9689,"gimlet"],
+[63,"Linny's","Toronto","Americas",43.6500,-79.4000,"linny%E2%80%99s"],
+[64,"Williams Butcherstable","Zurich","Europe",47.3769,8.5417,"williams-butcherstable"],
+[65,"Prime + Proper","Detroit","Americas",42.3320,-83.0490,"prime%2Bproper"],
+[66,"Grill Royal","Berlin","Europe",52.5210,13.3870,"grill-royal"],
+[67,"American Cut","Tribeca, New York","Americas",40.7190,-74.0090,"american-cut"],
+[68,"Keens Steakhouse","New York","Americas",40.7500,-73.9880,"keens-steakhouse"],
+[69,"Sperling & Co.","Stockholm","Europe",59.3340,18.0700,"sperling-%26-co."],
+[70,"Txula Steak","New York","Americas",40.7220,-73.9870,"txula-steak"],
+[71,"Bazaar Meat by José Andrés","New York","Americas",40.7450,-73.9880,"bazaar-meat"],
+[72,"Brutus Tavern","Athens","Europe",37.9838,23.7275,"brutus-tavern"],
+[73,"Swift & Sons","Chicago","Americas",41.8860,-87.6520,"swift-%26-sons"],
+[74,"Maven","Antwerp","Europe",51.2194,4.4025,"maven"],
+[75,"Regina Bistecca","Florence","Europe",43.7730,11.2590,"regina-bistecca"],
+[76,"Firewood","George Town, Penang","Asia",5.4141,100.3288,"firewood"],
+[77,"SK Steak & Oyster","Brisbane","Oceania",-27.4575,153.0340,"sk-steak-%26-oyster"],
+[78,"Carna by Dario Cecchini","Hong Kong","Asia",22.2970,114.1720,"carna-by-dario-cecchini"],
+[79,"Matilda 159 Domain","South Yarra, Melbourne","Oceania",-37.8330,144.9760,"matilda-159-domain"],
+[80,"The Steak House","Hong Kong","Asia",22.2940,114.1740,"the-steak-house"],
+[81,"Meatmaiden","Melbourne","Oceania",-37.8150,144.9630,"meatmaiden"],
+[82,"Happening Costanera","Buenos Aires","Americas",-34.5540,-58.4020,"happening"],
+[83,"Shatōburian","Singapore","Asia",1.3000,103.8400,"shat%C5%8Dburian"],
+[84,"Gage & Tollner","Brooklyn, New York","Americas",40.6900,-73.9870,"gage-%26-tollner"],
+[85,"Shell House","Sydney","Oceania",-33.8660,151.2080,"shell-house"],
+[86,"Beef & Glory","Vienna","Europe",48.2050,16.3700,"beef-%26-glory"],
+[87,"Gallaghers","New York","Americas",40.7610,-73.9830,"gallaghers"],
+[88,"Bistecca Tuscan Steakhouse","Singapore","Asia",1.2910,103.8390,"bistecca-tuscan-steakhouse"],
+[89,"The Grand Bar & Grill","Helsinki","Europe",60.1699,24.9384,"the-grand"],
+[90,"Sagardi","Shoreditch, London","Europe",51.5250,-0.0800,"sagardi"],
+[91,"Fat Rabbit","St. Catharines, Canada","Americas",43.1594,-79.2469,"fat-rabbit"],
+[92,"Carnal Steakhouse","Barcelona","Europe",41.3920,2.1500,"carnal"],
+[93,"The Cut Bar & Grill","The Rocks, Sydney","Oceania",-33.8590,151.2080,"the-cut"],
+[94,"Soichiro","Jakarta","Asia",-6.2270,106.8080,"soichiro-steakhouse"],
+[95,"Grill Americano","Melbourne","Oceania",-37.8150,144.9600,"grill-americano"],
+[96,"Zoilo","Marylebone, London","Europe",51.5170,-0.1520,"zoilo"],
+[97,"Bistecca","Sydney","Oceania",-33.8640,151.2090,"bistecca"],
+[98,"The Blockman","Johannesburg","Africa",-26.1450,28.0400,"the-blockman"],
+[99,"The Guinea Grill","Mayfair, London","Europe",51.5100,-0.1470,"the-guinea-grill"],
+[100,"Izzy's Steaks & Chops","San Francisco","Americas",37.8000,-122.4380,"izzy%E2%80%99s"],
+[101,"Brabo","Barcelona","Europe",41.3900,2.1600,"brabo"]
+];
+
+const data=R.map(r=>({rank:r[0],name:r[1],city:r[2],region:r[3],lat:r[4],lng:r[5],slug:r[6]}));
+
+// ---------- Map ----------
+const map=L.map('map',{zoomControl:false,worldCopyJump:true}).setView([25,10],2);
+L.control.zoom({position:'bottomleft'}).addTo(map);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
+  attribution:'&copy; OpenStreetMap &copy; CARTO · Ranking © worldbeststeaks.com',
+  maxZoom:19
+}).addTo(map);
+
+const tier=r=>r<=10?'gold':r<=50?'tomato':'char';
+
+const cluster=L.markerClusterGroup({
+  showCoverageOnHover:false,
+  maxClusterRadius:44,
+  iconCreateFunction:c=>L.divIcon({html:`<div class="cluster">${c.getChildCount()}</div>`,className:'',iconSize:[40,40]})
+});
+
+function popupHtml(d){
+  const gm=`https://www.google.com/maps/search/${encodeURIComponent(d.name+' '+d.city)}`;
+  return `<div>
+    <div class="pp-rank">NO. ${d.rank}</div>
+    <div class="pp-name">${d.name.toUpperCase()}</div>
+    <div class="pp-city">${d.city}</div>
+    <div class="pp-actions">
+      <a class="pp-dir" href="${gm}" target="_blank" rel="noopener">Directions</a>
+      <a class="pp-ig" href="https://www.worldbeststeaks.com/2026-list-1-101/${d.slug}" target="_blank" rel="noopener">Full profile</a>
+    </div>
+    <div class="pp-note">Pin shows the neighbourhood — tap Directions for the exact address.</div>
+  </div>`;
+}
+
+data.forEach(d=>{
+  d.marker=L.marker([d.lat,d.lng],{
+    icon:L.divIcon({html:`<div class="badge ${tier(d.rank)}">${d.rank}</div>`,className:'',iconSize:[34,34],iconAnchor:[17,30]})
+  }).bindPopup(popupHtml(d));
+});
+
+// ---------- Filtering / list ----------
+const listEl=document.getElementById('list'),cntEl=document.getElementById('cnt'),qEl=document.getElementById('q');
+let activeFilter='all';
+
+function visible(){
+  const q=qEl.value.trim().toLowerCase();
+  return data.filter(d=>{
+    if(activeFilter==='top10'&&d.rank>10)return false;
+    if(activeFilter==='top25'&&d.rank>25)return false;
+    if(['Europe','Americas','Asia','Oceania','Africa'].includes(activeFilter)&&d.region!==activeFilter)return false;
+    if(q&&!(d.name.toLowerCase().includes(q)||d.city.toLowerCase().includes(q)))return false;
+    return true;
+  });
+}
+
+function render(){
+  const v=visible();
+  cluster.clearLayers();
+  v.forEach(d=>cluster.addLayer(d.marker));
+  if(!map.hasLayer(cluster))map.addLayer(cluster);
+
+  cntEl.textContent=`${v.length} place${v.length===1?'':'s'}`;
+  listEl.innerHTML=v.length?'':'<div class="empty">No steaks match that search. Try another name or city.</div>';
+  v.forEach(d=>{
+    const row=document.createElement('div');
+    row.className='row';
+    row.innerHTML=`<div class="rk ${tier(d.rank)}">${d.rank}</div>
+      <div><div class="nm">${d.name}</div><div class="ct">${d.city}</div></div>`;
+    row.onclick=()=>{
+      closePanelOnMobile();
+      map.setView([d.lat,d.lng],14,{animate:true});
+      setTimeout(()=>d.marker.openPopup(),350);
+    };
+    listEl.appendChild(row);
+  });
+}
+
+qEl.addEventListener('input',render);
+document.getElementById('chips').addEventListener('click',e=>{
+  const b=e.target.closest('.chip');if(!b)return;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+  b.classList.add('on');activeFilter=b.dataset.f;render();
+  const v=visible();
+  if(v.length&&activeFilter!=='all'){
+    map.fitBounds(L.latLngBounds(v.map(d=>[d.lat,d.lng])),{padding:[50,50]});
+  }
+});
+
+// ---------- Panel (mobile bottom sheet / desktop sidebar) ----------
+const panel=document.getElementById('panel');
+const isDesktop=()=>window.matchMedia('(min-width:900px)').matches;
+function closePanelOnMobile(){if(!isDesktop())panel.classList.remove('open')}
+document.getElementById('listBtn').onclick=()=>panel.classList.toggle('open');
+document.getElementById('closePanel').onclick=()=>panel.classList.remove('open');
+function syncPanel(){if(isDesktop())panel.classList.add('open')}
+window.addEventListener('resize',syncPanel);
+
+// ---------- Locate me ----------
+let meMarker=null;
+document.getElementById('locBtn').onclick=()=>{
+  if(!navigator.geolocation){alert('Location is not available in this browser.');return}
+  navigator.geolocation.getCurrentPosition(p=>{
+    const ll=[p.coords.latitude,p.coords.longitude];
+    if(meMarker)meMarker.remove();
+    meMarker=L.circleMarker(ll,{radius:8,color:'#f2b23e',weight:3,fillColor:'#f2b23e',fillOpacity:.4}).addTo(map).bindPopup('You are here');
+    map.setView(ll,11,{animate:true});
+  },()=>alert('Could not get your location. Check that location access is allowed.'));
+};
+
+syncPanel();
+render();
+</script>
+</body>
+</html>
