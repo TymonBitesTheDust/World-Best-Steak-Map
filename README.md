@@ -1,6 +1,6 @@
-# 🍔 Burger 101 — World's Best Burgers Map
+# 🍖 Steak 101 — World's Best Steaks Map
 
-An interactive map of the **World's 101 Best Burgers (2026)**. Browse every ranked burger restaurant on a world map, search by name or city, filter by rank or region, and get directions to the exact spot.
+An interactive map of the **World's 101 Best Steaks (2026)**. Browse every ranked steak restaurant on a world map, search by name or city, filter by rank or region, and get directions to the exact spot.
 
 100% Vibe Coding based
 
@@ -20,23 +20,23 @@ An interactive map of the **World's 101 Best Burgers (2026)**. Browse every rank
 
 ### Just open it
 
-1. Download `worlds-best-burgers-map.html` (or clone this repo).
+1. Download `worlds-best-steaks-map.html` (or clone this repo).
 2. Double-click the file — it opens in your default browser. That's it.
 
 ```bash
-git clone https://github.com/<your-username>/burger-101-map.git
-cd burger-101-map
+git clone https://github.com/<your-username>/steak-101-map.git
+cd steak-101-map
 # open the file directly, or serve it locally:
 python3 -m http.server 8000
-# then visit http://localhost:8000/worlds-best-burgers-map.html
+# then visit http://localhost:8000/worlds-best-steaks-map.html
 ```
 
 > **Note:** the "Find me" (geolocation) button requires the page to be served over `https://` or opened via `localhost` in some browsers. Everything else works from a plain `file://` open.
 
-- `worlds-best-burgers-map.html` - original version for Windows
-- `worlds-best-burgers-map (1).html` - Another Windows version but included each restaurant's signature burger
-- `worlds-best-burgers-map-mobile.html` - Similar but with mobile UI
-- `worlds-best-burgers-map-mobile.apk` - App in Android
+- `worlds-best-steaks-map.html` - original version for Windows
+- `worlds-best-steaks-map (1).html` - Another Windows version but included each restaurant's signature steak
+- `worlds-best-steaks-map-mobile.html` - Similar but with mobile UI
+- `worlds-best-steaks-map-mobile.apk` - App in Android
 
 ### Install like an app
 
@@ -51,7 +51,7 @@ Because it's a single static file, you can publish it free with **GitHub Pages**
 1. Push this repo to GitHub.
 2. Rename the file to `index.html` (or keep the name and link to it directly).
 3. Repo **Settings → Pages → Deploy from a branch** → select `main` / root.
-4. Your map is live at `https://<your-username>.github.io/burger-101-map/`.
+4. Your map is live at `https://<your-username>.github.io/steak-101-map/`.
 
 ## 🛠️ Tech stack
 
@@ -72,7 +72,7 @@ The restaurant list (rank, name, city, region, Instagram handle) lives in a sing
 ```js
 // rank, name, city, region, lat, lng, instagram
 const R = [
-  [1, "Bleecker", "London", "Europe", 51.5205, -0.0759, "bleeckerburger"],
+  [1, "Bleecker", "London", "Europe", 51.5205, -0.0759, "bleeckersteak"],
   ...
 ];
 ```
@@ -87,15 +87,15 @@ To update the ranking each year, edit this array — nothing else needs to chang
 - **Map style:** swap the tile URL — e.g. CARTO `dark_all` for dark mode, `light_all`/Positron for minimal, or standard OSM tiles.
 - **Rank tiers:** the `tier()` function controls which ranks get which badge color.
 
-## 🍖 Related Projects
+## 🍔 Related Projects
 
 See [SUPPORT.md](SUPPORT.md) for other maps in this series.
 
 ## 🙏 Credits
 
-- Ranking: [World Best Burgers — Our List](https://www.worldbestburgers.com/our-list)
+- Ranking: [World Best steaks — Our List](https://www.worldbeststeaks.com/our-list)
 - Map data: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, tiles by [CARTO](https://carto.com/)
 
 ## 📄 License
 
-MIT — do whatever you like, but keep the map tile and data attributions intact. The burger ranking itself belongs to worldbestburgers.com.
+MIT — do whatever you like, but keep the map tile and data attributions intact. The steak ranking itself belongs to worldbeststeaks.com.
