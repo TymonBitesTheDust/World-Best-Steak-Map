@@ -1,4 +1,4 @@
-# 🍖 Steak 101 — World's Best Steaks Map
+# 🥩 Steak 101 — World's Best Steaks Map
 
 An interactive map of the **World's 101 Best Steaks (2026)**. Browse every ranked steak restaurant on a world map, search by name or city, filter by rank or region, and get directions to the exact spot.
 
